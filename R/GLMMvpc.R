@@ -124,3 +124,68 @@ chol_transf <- function (x) {
     res
   }
 }
+
+f.theta <- function(modObj) {
+  V <- stats::vcov(modObj)
+  sigma_f_ind <- length(modObj$beta) + 1
+  nvar <- modObj$nvarcomp_bounded
+  npar <- dim(V)[1]
+  
+  vbvar <- matrix(c(V[3,3],V[3,5],
+                    V[5,3],V[5,5]),
+                   nrow = 2, ncol = 2, byrow = TRUE)
+  
+  if (nvar == 1) {
+    V1 <- V2 <- V
+    V2 <- V2[-sigma_f_ind, -sigma_f_ind]
+    lower1 <- rep(-Inf,npar)
+    lower1[sigma_f_ind] <- 0
+    f1 <- tmvtnorm::mtmvnorm(mean = rep(0,npar), sigma = V1, 
+                   lower = lower1, upper = rep(Inf,npar))
+    f2 <- tmvtnorm::mtmvnorm(mean = rep(0,npar-1), sigma = V2, 
+                   lower = rep(-Inf,npar-1), upper = rep(Inf,npar-1))
+    return(list("means" = list(f1$tmean,f2$tmean), "Sigma" = list(f1$tvar,f2$tvar)))
+  } else if(nvar == 2) {
+    V1 <- V2 <- V3 <- V4 <- V
+    V2 <- V2[-sigma_f_ind, -sigma_f_ind]
+    V3 <-V3[-(sigma_f_ind+nvar), -(sigma_f_ind+nvar)]
+    V4 <- V4[-c(sigma_f_ind,sigma_f_ind+nvar), -c(sigma_f_ind,sigma_f_ind+nvar)]
+    lower1 <- rep(-Inf,npar)
+    lower1[c(sigma_f_ind,sigma_f_ind+nvar)] <- 0
+    f1 <- tmvtnorm::mtmvnorm(mean = rep(0,npar), sigma = V1, 
+                   lower = lower1, upper = rep(Inf,npar))
+    pi1 <- as.numeric(mvtnorm::pmvnorm(lower = c(0,0), upper = c(Inf,Inf),
+                              mean = c(0,0), sigma = vbvar))
+    mu1 <- f1$tmean
+    Sigma1 <- f1$tvar
+    f2 <- tmvtnorm::mtmvnorm(mean = rep(0,npar-1), sigma = V2, 
+                  lower = c(-Inf,-Inf,-Inf,0,-Inf), upper = rep(Inf,npar-1))
+    pi2 <- 0.25
+    mu2 <- f2$tmean; mu2 <- c(mu2[1:(sigma_f_ind-1)], 0, mu2[sigma_f_ind:length(mu2)])
+    Sigma2 <- f2$tvar
+    Sigma2 <- rbind(Sigma2[1:(sigma_f_ind-1), ],0, Sigma2[sigma_f_ind:nrow(Sigma2),])
+    Sigma2 <- cbind(Sigma2[,1:(sigma_f_ind-1)],0, Sigma2[,sigma_f_ind:ncol(Sigma2)])
+    f3 <- tmvtnorm::mtmvnorm(mean = rep(0,npar-1), sigma = V3, 
+                   lower = c(-Inf,-Inf,0,-Inf,-Inf), upper = rep(Inf,npar-1))
+    pi3 <- 0.25
+    mu3 <- f3$tmean; mu3 <- c(mu3[1:(sigma_f_ind+1)], 0, mu3[length(mu3)])
+    Sigma3 <- f3$tvar
+    Sigma3 <- rbind(Sigma3[1:(sigma_f_ind+1), ],0, Sigma3[nrow(Sigma3),])
+    Sigma3 <- cbind(Sigma3[,1:(sigma_f_ind+1)],0, Sigma3[,ncol(Sigma3)])
+    f4 <- tmvtnorm::mtmvnorm(mean = rep(0,npar-2), sigma = V4, 
+                  lower = rep(-Inf,npar-2), upper = rep(Inf,npar-2))
+    pi4 <-0.5 - pi1
+    mu4 <- f4$tmean; mu4 <- c(mu4[1:(sigma_f_ind-1)], 0, mu4[sigma_f_ind], 0, 
+                              mu4[length(mu4)])
+    Sigma4 <- f4$tvar
+    Sigma4 <- rbind(Sigma4[1:(sigma_f_ind-1), ],0, Sigma4[sigma_f_ind,], 0, 
+                    Sigma4[nrow(Sigma4),])
+    Sigma4 <- cbind(Sigma4[,1:(sigma_f_ind-1)],0, Sigma4[,sigma_f_ind], 0, 
+                    Sigma4[,ncol(Sigma4)])
+    return(list("pis"=list("pi_1" = pi1, "pi_2" = pi2, "pi_3" = pi3, "pi_4" = pi4), 
+                "means" = list("mu_1" = mu1, "mu_2" = mu2, "mu_3" = mu3, "mu_4" = mu4), 
+                "Sigma" = list("sig_1" = Sigma1, "sig_2" = Sigma2, "sig_3" = Sigma3, 
+                               "sig_4" = Sigma4)))
+  }
+}
+
