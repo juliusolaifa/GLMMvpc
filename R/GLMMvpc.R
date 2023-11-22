@@ -15,7 +15,7 @@ glmm.fit <- function(fixed, random, data, family) {
   result <- list("beta"=modObj$coefficients, "Sigma"=modObj$D, "phi"=modObj$phi, 
                  "family"=modObj$family$family, "link"=modObj$family$link, 
                  "nfixef"=length(c(modObj$coefficients, modObj$phis)), 
-                 "nvarcomp_bounded"=dim(modObj$D)[1], "vcov" = vcov2(modObj),
+                 "nvarcomp_bounded"=dim(modObj$D)[1], "v_chol" = stats::vcov(modObj),
                  "logLikelihood"=modObj$logLik, "modObj"=modObj)
   
   class(result) <- "glmmMod"
@@ -79,10 +79,12 @@ vpc_compute <- function(mu, sigm, phi, family, link, p=NULL) {
   )
 }
 
-vcov2 <-function(modObj) {
-  beta <-unname(modObj$coefficients)
+
+vcov.glmmMod <-function(modObj) {
+  modObj <- modObj$modObj
+  beta <- unname(modObj$coefficients)
   sigma_chol <- chol_transf(modObj$D)
-  phis <-unname(modObj$phis)
+  phis <- unname(modObj$phis)
   theta_chol <-c(beta, sigma_chol, phis)
   
   sigma_f_ind <-length(beta)+1
@@ -101,7 +103,6 @@ vcov2 <-function(modObj) {
   dimnames(V) <-dimnames(V_chol)
   V
 }
-
 
 ## Taken from the GLMMadaptive package
 chol_transf <- function (x) {

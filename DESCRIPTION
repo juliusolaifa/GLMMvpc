@@ -13,5 +13,7 @@ Imports:
     COMPoissonReg,
     GLMMadaptive,
     MASS,
+    mvtnorm,
     numDeriv,
+    tmvtnorm,
     tweedie
