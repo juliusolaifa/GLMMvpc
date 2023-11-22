@@ -142,9 +142,20 @@ f.theta <- function(modObj) {
     lower1[sigma_f_ind] <- 0
     f1 <- tmvtnorm::mtmvnorm(mean = rep(0,npar), sigma = V1, 
                    lower = lower1, upper = rep(Inf,npar))
+    mu1 <- f1$tmean
+    Sigma1 <- f1$tvar
+    pi1 <- 0.5
     f2 <- tmvtnorm::mtmvnorm(mean = rep(0,npar-1), sigma = V2, 
                    lower = rep(-Inf,npar-1), upper = rep(Inf,npar-1))
-    return(list("means" = list(f1$tmean,f2$tmean), "Sigma" = list(f1$tvar,f2$tvar)))
+    mu2 <- f2$tmean
+    Sigma2 <- f2$tvar
+    pi2 <- 0.5
+    mu <- pi1*mu1+pi2*mu2
+    Sig <- (pi1*(Sigma1 + mu1 %*%t(mu1))+pi2*(Sigma2 + mu2 %*%t(mu2)))- mu %*%t(mu)
+    return(list("mu" = mu, "Sig" = Sig))
+    # return(list("pis" = list("pi_1" = 0.5, "pi_2" = 0.5),
+    #             "means" = list("mu_1" = mu1, "mu_2" = mu2), 
+    #             "Sigma" = list("sig_1" = Sigma1, "sig_2" = Sigma2)))
   } else if(nvar == 2) {
     V1 <- V2 <- V3 <- V4 <- V
     V2 <- V2[-sigma_f_ind, -sigma_f_ind]
@@ -182,10 +193,14 @@ f.theta <- function(modObj) {
                     Sigma4[nrow(Sigma4),])
     Sigma4 <- cbind(Sigma4[,1:(sigma_f_ind-1)],0, Sigma4[,sigma_f_ind], 0, 
                     Sigma4[,ncol(Sigma4)])
-    return(list("pis"=list("pi_1" = pi1, "pi_2" = pi2, "pi_3" = pi3, "pi_4" = pi4), 
-                "means" = list("mu_1" = mu1, "mu_2" = mu2, "mu_3" = mu3, "mu_4" = mu4), 
-                "Sigma" = list("sig_1" = Sigma1, "sig_2" = Sigma2, "sig_3" = Sigma3, 
-                               "sig_4" = Sigma4)))
+    mu <- pi1*mu1+pi2*mu2+pi3*mu3+pi4*mu4
+    Sig <- (pi1*(Sigma1 + mu1 %*%t(mu1))+pi2*(Sigma2 + mu2 %*%t(mu2))+
+          pi3*(Sigma3 + mu3 %*%t(mu3))+pi4*(Sigma4 + mu4 %*%t(mu4)))- mu %*%t(mu)
+    return(list("mu" = mu, "Sig" = Sig))
+    # return(list("pis"=list("pi_1" = pi1, "pi_2" = pi2, "pi_3" = pi3, "pi_4" = pi4), 
+    #             "means" = list("mu_1" = mu1, "mu_2" = mu2, "mu_3" = mu3, "mu_4" = mu4), 
+    #             "Sigma" = list("sig_1" = Sigma1, "sig_2" = Sigma2, "sig_3" = Sigma3, 
+    #                            "sig_4" = Sigma4)))
   }
 }
 
