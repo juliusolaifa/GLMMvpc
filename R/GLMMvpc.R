@@ -13,7 +13,7 @@ glmm.fit <- function(fixed, random, data, family) {
   attr(m1$D, "L") <- NULL
 
   result <- list("beta"=modObj$coefficients, "Sigma"=modObj$D, "phi"=modObj$phi, 
-                 "family"=modObj$family$family, "link"=modObj$family$link, 
+                 "family"=family, "link"=modObj$family$link, 
                  "nfixef"=length(c(modObj$coefficients, modObj$phis)), 
                  "nvarcomp_bounded"=dim(modObj$D)[1], "v_chol" = stats::vcov(modObj),
                  "logLikelihood"=modObj$logLik, "modObj"=modObj)
@@ -22,11 +22,11 @@ glmm.fit <- function(fixed, random, data, family) {
   result
 }
 
-glmm.vpc <- function(X, Z=NULL, beta, Sigma, phi, family, link) {
+glmm.vpc <- function(X, Z=NULL, beta, Sigma, phi, family, link, p) {
   UseMethod("glmm.vpc")
 }
 
-glmm.vpc.default <- function(X,Z=NULL,beta,Sigma,phi,family,link) {
+glmm.vpc.default <- function(X,Z=NULL,beta,Sigma,phi,family,link, p) {
   if(is.null(Z)) {
     Z = X
   }
@@ -36,7 +36,7 @@ glmm.vpc.default <- function(X,Z=NULL,beta,Sigma,phi,family,link) {
   }
   mu <- X%*%beta
   sigm <- Z%*%Sigma%*%Z
-  vpc_compute(mu, sigm, phi, family, link)
+  vpc_compute(mu, sigm, phi, family, link, p)
 }
 
 glmm.vpc.glmmMod <- function(modelObj, X, Z=NULL) {
@@ -45,8 +45,8 @@ glmm.vpc.glmmMod <- function(modelObj, X, Z=NULL) {
   phi <- modelObj$phi
   family <- modelObj$family
   link <- modelObj$link
-  
-  glmm.vpc.default(X, Z, beta, Sigma, phi, family, link)
+  p <- modelObj$p
+  glmm.vpc.default(X, Z, beta, Sigma, phi, family, link, p)
 }
 
 vpc_compute <- function(mu, sigm, phi, family, link, p=NULL) {
@@ -56,7 +56,7 @@ vpc_compute <- function(mu, sigm, phi, family, link, p=NULL) {
     inv.var <- (exp(sigm) - 1)*exp(2*mu + sigm)
   }
   switch(family,
-         "negative binomial"={
+         "negative.binomial"={
            inv.mu.p <- exp(2*mu + 4*sigm/2)
            return(inv.var / (inv.var + inv.mu + inv.mu.p/phi))
          },
