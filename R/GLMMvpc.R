@@ -1,24 +1,22 @@
-vpc.score <- function(fixed, random, data, family, X, Z=NULL) {
-  fitmod <- glmm.fit(fixed=fixed, random=random, data=data, family=family)
-  vpc <- glmm.vpc(fitmod, X)
-  dimnames(vpc) <- list("", "vpc.score")
-  fitmod$score <- vpc
-  attr(fitmod, "class") <- "vpcscore"
-  fitmod
-}
-
 glmm.fit <- function(fixed, random, data, family) {
   
   modObj <- GLMMadaptive::mixed_model(fixed, random, data, family)
-  attr(m1$D, "L") <- NULL
-
   result <- list("beta"=modObj$coefficients, "Sigma"=modObj$D, "phi"=modObj$phi, 
                  "family"=family, "link"=modObj$family$link, 
                  "nfixef"=length(c(modObj$coefficients, modObj$phis)), 
                  "nvarcomp_bounded"=dim(modObj$D)[1], "v_chol" = stats::vcov(modObj),
-                 "logLikelihood"=modObj$logLik, "modObj"=modObj)
-  
+                 "logLikelihood"=modObj$logLik, "modObj"=modObj, "n" = nrow(data))
   class(result) <- "glmmMod"
+  result
+}
+
+vpc.score <- function(fixed, random, data, family, X, Z=NULL) {
+  fitmod <- glmm.fit(fixed=fixed, random=random, data=data, family=family)
+  vpc <- glmm.vpc(fitmod, X)
+  dimnames(vpc) <- list("", "vpc.score")
+  result <- list("fitmod" = fitmod, "f.theta" = f.theta(fitmod), "vpc" = vpc,
+                 "X" = X)
+  class(result) <- "vpcScore"
   result
 }
 
@@ -74,9 +72,17 @@ vpc_compute <- function(mu, sigm, phi, family, link, p=NULL) {
            return(inv.var / (inv.var + phi*inv.mu)) #phi = exp(eta)
          },
          {
-           return(paste("VPC not implemented for family: ", family))
+           stop("VPC not implemented for family: ", family)
          }
   )
+}
+
+print.vpcScore <- function(vpcSoreObj) {
+  cat("Vpc: ")
+  cat(vpcSoreObj$vpc)
+  cat("\n")
+  cat("Distribution\n")
+  print(vpcSoreObj$f.theta)
 }
 
 
@@ -203,4 +209,3 @@ f.theta <- function(modObj) {
     #                            "sig_4" = Sigma4)))
   }
 }
-
