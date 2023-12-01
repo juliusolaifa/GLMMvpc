@@ -23,35 +23,35 @@ glmmdata <- function(iter.size, x, beta, sigma.u, group.sizes, family,...) {
   #split conditional means into list according to group
 
   eta <- X%*%beta + z%*%c(u)
-  cond_means <- split(x =exp(eta), f = group_assignments)
-  
+  cond_means <- split(x =exp(eta), f = rep(1:length(group.sizes), group.sizes))
   args <- list(...) 
   generate <- switch(family,
      nbinom2={
        #MASS::rnegbin
-       function() unlist(mapply(MASS::rnegbin, n=cluster.sizes, 
+       function() unlist(mapply(MASS::rnegbin, n=group.sizes, 
                                 mu=cond_means,args$theta))
      },
      tweedie={
        #tweedie::rtweedie
-       function() unlist(mapply(tweedie::rtweedie, n=cluster.sizes, 
+       function() unlist(mapply(tweedie::rtweedie, n=group.sizes, 
                                 mu=cond_means, args$phi, args$power))
      },
      compois={
        #COMPoissonReg::rcmp
-       function() unlist(mapply(COMPoissonReg::rcmp, n=cluster.sizes, 
+       function() unlist(mapply(COMPoissonReg::rcmp, n=group.sizes, 
                                 lambda=cond_means, args$nu))
      },
      # genpois={
      #   #HMMpa::rgenpois
      #   lambda1 <- unlist(sapply(cond_means, function(cm) cm *(1 - args$lambda2)))
-     #   function() unlist(mapply(HMMpa::rgenpois, n=cluster.sizes, lambda1, args$lambda2))
+     #   function() unlist(mapply(HMMpa::rgenpois, n=group.sizes, lambda1, args$lambda2))
      # },
      stop("data generation not implemented for family: ", family)
   )
   
-  for (i in 1:iter) {                            
-    y_matrix[i, ] <- generate()
+  for (i in 1:iter) {                
+    dat <- generate()
+    y_matrix[i, ] <- dat 
   }
   
   result <- structure(list("x" = x, "z" = z, "y" = y_matrix, "family" = family, 
@@ -107,16 +107,16 @@ tail.glmmData <- function(dataObj, n = 5L, ...) {
 
 # Example
 #x <- c(23,24,25,26,29,30,18,22,21,16,18,16,21)
-x <- c(1,1,0,1,0,1,0,0,1,0,1,1,0)
-beta <- c(7,9)
-sigma.u <- matrix(c(2,1,1,2),2)
-cluster.sizes <- c(3,2,5,3)
-theta = 2
-phi = 2
-power = 1.6
-nu = 3
-lambda2 = 0.7
-iter =10
-data1 <- glmmdata(iter, x, beta, sigma.u, cluster.sizes, "nbinom2", theta=theta)
-data2 <- glmmdata(iter, x, beta, sigma.u, cluster.sizes, "tweedie", phi=phi, power=power)
-data3 <- glmmdata(iter, x, beta, sigma.u, cluster.sizes, "compois", nu=nu)
+# x <- c(1,1,0,1,0,1,0,0,1,0,1,1,0)
+# beta <- c(7,9)
+# sigma.u <- matrix(c(2,1,1,2),2)
+# group.sizes <- c(3,2,5,3)
+# theta = 2
+# phi = 2
+# power = 1.6
+# nu = 3
+# lambda2 = 0.7
+# iter =10
+# data1 <- glmmdata(iter, x, beta, sigma.u, group.sizes, "nbinom2", theta=theta)
+# data2 <- glmmdata(iter, x, beta, sigma.u, group.sizes, "tweedie", phi=phi, power=power)
+# data3 <- glmmdata(iter, x, beta, sigma.u, group.sizes, "compois", nu=nu)

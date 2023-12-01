@@ -1,13 +1,16 @@
 glmm.fit <- function(fixed, random, data, family) {
-  
-  modObj <- GLMMadaptive::mixed_model(fixed, random, data, family)
-  result <- list("beta"=modObj$coefficients, "Sigma"=modObj$D, "phi"=modObj$phi, 
+  modObj <- GLMMadaptive::mixed_model(fixed=fixed, random=random, data=data, family=family)
+  result <- list("beta"=modObj$coefficients, "Sigma"=modObj$D, "phi"=1/modObj$phi, 
                  "family"=family, "link"=modObj$family$link, 
                  "nfixef"=length(c(modObj$coefficients, modObj$phis)), 
                  "nvarcomp_bounded"=dim(modObj$D)[1], "v_chol" = stats::vcov(modObj),
                  "logLikelihood"=modObj$logLik, "modObj"=modObj, "n" = nrow(data))
   class(result) <- "glmmMod"
   result
+}
+
+logLik.glmmMod <- function(fitmod) {
+  fitmod$logLikelihood
 }
 
 vpc.score <- function(fixed, random, data, family, X, Z=NULL) {
@@ -19,6 +22,7 @@ vpc.score <- function(fixed, random, data, family, X, Z=NULL) {
   class(result) <- "vpcScore"
   result
 }
+
 
 glmm.vpc <- function(X, Z=NULL, beta, Sigma, phi, family, link, p) {
   UseMethod("glmm.vpc")
@@ -41,7 +45,7 @@ glmm.vpc.glmmMod <- function(modelObj, X, Z=NULL) {
   beta <- modelObj$beta
   Sigma <- modelObj$Sigma
   phi <- modelObj$phi
-  family <- modelObj$family
+  family <- modelObj$family$family
   link <- modelObj$link
   p <- modelObj$p
   glmm.vpc.default(X, Z, beta, Sigma, phi, family, link, p)
@@ -54,7 +58,7 @@ vpc_compute <- function(mu, sigm, phi, family, link, p=NULL) {
     inv.var <- (exp(sigm) - 1)*exp(2*mu + sigm)
   }
   switch(family,
-         "negative.binomial"={
+         "negative binomial"={
            inv.mu.p <- exp(2*mu + 4*sigm/2)
            return(inv.var / (inv.var + inv.mu + inv.mu.p/phi))
          },
@@ -80,9 +84,6 @@ vpc_compute <- function(mu, sigm, phi, family, link, p=NULL) {
 print.vpcScore <- function(vpcSoreObj) {
   cat("Vpc: ")
   cat(vpcSoreObj$vpc)
-  cat("\n")
-  cat("Distribution\n")
-  print(vpcSoreObj$f.theta)
 }
 
 
@@ -131,6 +132,7 @@ chol_transf <- function (x) {
   }
 }
 
+#The distribution of parameters when some are on the boundary
 f.theta <- function(modObj) {
   V <- stats::vcov(modObj)
   sigma_f_ind <- length(modObj$beta) + 1
