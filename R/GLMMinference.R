@@ -82,55 +82,56 @@ confint.vpcScore <- function(vpcObj, level=0.95) {
   
   #This function is needed to produce the jacobian 
   # of vpc at the values of the fitted parameters
-  wrapper_function <- function(params, fitmod, X) {
-    
-    nbeta <- length(fitmod$beta)
-    #obtain number of unique variance component
-    nSigma <- sum(choose(fitmod$nvarcomp_bounded, 2) , fitmod$nvarcomp_bounded)
-    beta <- fitmod$beta
-    sigma_vector <- params[sum(nbeta, 1):sum(nbeta, nSigma)]
-    phi <- fitmod$phi
-    
-    Sigma <- matrix(0, nrow = nrow(fitmod$Sigma), ncol = nrow(fitmod$Sigma))
+  wrapper_function <- function(params, pos, X) {
+
+    beta <- params[pos[[1]]]
+    sigma_vector <- params[pos[[2]]]
+    phi <- params[pos[[3]]]
+
+    Sigma <- matrix(0, nrow=nrowD, ncol=nrowD)
     Sigma[upper.tri(Sigma, diag = TRUE)] <- sigma_vector
     Sigma[lower.tri(Sigma)] <- t(Sigma)[lower.tri(Sigma)]
-    
+
     family <- fitmod$family$family
     link <- fitmod$link
     p <- fitmod$p
     return(glmm.vpc(X, beta = beta, Sigma = Sigma, phi = phi, family = family, link = link, p = p))
   }
   
-  fitmod <- vpcObj$fitmod
+  fitmod <- vpcObj$fitmod 
   sigma_vector <- fitmod$Sigma[upper.tri(fitmod$Sigma, diag = TRUE)]
   param_vector <- c(fitmod$beta, sigma_vector, fitmod$phi)
   
-  J <- numDeriv::grad(func = function(par) wrapper_function(par, fitmod, vpcObj$X), x = param_vector)
-  V_n <- f.theta(fitmod)$Sig / fitmod$n 
-  se <- J^T%*%V_n%*%J
-  alpha_2 <- (1 - level) / 2 
-  z_alpha <- -stats::qnorm(alpha_2)
-  lower <- vpcObj$vpc - z_alpha*se
-  upper <- vpcObj$vpc + z_alpha*se
+  nbeta <- length(fitmod$beta)
+  nparam <- length(param_vector)
+  nrowD <- dim(fitmod$Sigma)[1]
+  param_pos <- list(1:nbeta, (nbeta+1):(nparam-1), nparam)
   
-  result <- list("lower" = lower, "pointestimate" = vpcObj$vpc, "upper" = upper, "level" = level)
-  class(result) <- "vpcConfint"
-  result
+  J_vpc <- numDeriv::grad(func = function(par) wrapper_function(par, param_pos, vpcObj$X), x = param_vector)
+  V_n <- f.theta(fitmod)$Sig / fitmod$n 
+  se_vpc <- sqrt(J_vpc^T%*%V_n%*%J_vpc)
+  
+  out <- cbind(vpcObj$vpc + stats::qnorm((1 - level) / 2) * se_vpc,
+               vpcObj$vpc,
+               vpcObj$vpc + stats::qnorm((1 + level) / 2) * se_vpc
+              )
+  class(out) <- "vpcConfint"
+  out
 }
 
 print.vpcConfint <- function(vpcObj) {
   cat("Confidence Interval\n")
   cat("-------------------\n")
   cat("lower: ")
-  cat(vpcObj$lower)
+  cat(vpcObj[1])
   cat("\n")
   cat("point estimate: ")
-  cat(vpcObj$pointestimate)
+  cat(vpcObj[2])
   cat("\n")
   cat("upper: ")
-  cat(vpcObj$upper)
-  cat("\n")
-  cat("level: ")
-  cat(vpcObj$level)
+  cat(vpcObj[3])
+  # cat("\n")
+  # cat("level: ")
+  # cat(vpcObj$level)
 }
 

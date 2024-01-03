@@ -1,6 +1,6 @@
 glmm.fit <- function(fixed, random, data, family) {
   modObj <- GLMMadaptive::mixed_model(fixed=fixed, random=random, data=data, family=family)
-  result <- list("beta"=modObj$coefficients, "Sigma"=modObj$D, "phi"=1/modObj$phi, 
+  result <- list("beta"=modObj$coefficients, "Sigma"=modObj$D, "phi"=modObj$phi, 
                  "family"=family, "link"=modObj$family$link, 
                  "nfixef"=length(c(modObj$coefficients, modObj$phis)), 
                  "nvarcomp_bounded"=dim(modObj$D)[1], "v_chol" = stats::vcov(modObj),
