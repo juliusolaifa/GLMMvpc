@@ -93,5 +93,7 @@ confint.vpcObj <- function(vpcObj, level=0.95) {
   z_alph_2 <- -stats::qnorm((1-level)/2)
   lcl <- vpcObj$vpc - z_alph_2 * vpcObj$stderr
   ucl <- vpcObj$vpc + z_alph_2 * vpcObj$stderr
-  return(c(lcl, ucl))
+  result <- c(lcl, vpcObj$vpc, ucl)
+  names(result) <- c("lower", "point estimate", "upper")
+  return(result)
 }
