@@ -63,7 +63,7 @@ vpc <- function(fitObj, x) {
   stderr <- sqrt((gradient %*% fitObj$vcov  %*% gradient)/n)
   
   # Return both vpc value and gradient
-  result <- list("vpc" = vpc_value, "gradient" = gradient, "stderr" = stderr)
+  result <- list("vpc" = vpc_value, "gradient" = gradient, "stderr" = stderr, "modObj" = modObj)
   class(result) <- "vpcObj"
   return(result)
 }
