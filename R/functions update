@@ -97,3 +97,11 @@ confint.vpcObj <- function(vpcObj, level=0.95) {
   names(result) <- c("lower", "point estimate", "upper")
   return(result)
 }
+
+lrt.vpcObj <- function(vpcObj, H0, alpha=0.05) {
+    full_model <- vpcObj$modObj
+    reduced_model <- glmm(formula = H0, data = full_model$frame, 
+                                        family=full_model$family)
+    chi_sq <- anova(full_model, reduced_model)
+    chi_sq_stat <- chi_sq$Chisq[2]
+}
