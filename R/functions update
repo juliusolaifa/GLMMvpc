@@ -89,6 +89,7 @@ vpc_tweedie <-  function(b0, b1, phi, sig11, sig12, sig22, p, x) {
   return(cmp1/(cmp1 + cmp2))  # varfunc = phi*mu^p
 }
 
+## Define a function to compute critical value?
 confint.vpcObj <- function(vpcObj, level=0.95) {
   z_alph_2 <- -stats::qnorm((1-level)/2)
   lcl <- vpcObj$vpc - z_alph_2 * vpcObj$stderr
@@ -98,6 +99,7 @@ confint.vpcObj <- function(vpcObj, level=0.95) {
   return(result)
 }
 
+## TO BE COMPLETED
 lrt.vpcObj <- function(vpcObj, H0, alpha=0.05) {
     full_model <- vpcObj$modObj
     reduced_model <- glmm(formula = H0, data = full_model$frame, 
