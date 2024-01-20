@@ -1,4 +1,4 @@
-glmmdata <- function(iter.size, x, beta, sigma.u, group.sizes, family,...) {
+glmmdata <- function(x, beta, sigma.u, group.sizes, family,...) {
   
   x <- as.matrix(x)
   if(nrow(x) != sum(group.sizes)) {
@@ -18,14 +18,14 @@ glmmdata <- function(iter.size, x, beta, sigma.u, group.sizes, family,...) {
   z <- do.call(cbind, lapply(1:ncol(u), function(i) z0 * X[, i]))
   #####
   total_sample_size <- sum(group.sizes)
-  y_matrix <- matrix(nrow=iter, ncol=total_sample_size)
+  y_matrix <- matrix(nrow=1, ncol=total_sample_size)
   #####
   #split conditional means into list according to group
 
   eta <- X%*%beta + z%*%c(u)
   cond_means <- split(x =exp(eta), f = rep(1:length(group.sizes), group.sizes))
   args <- list(...) 
-  generate <- switch(family,
+  y <- switch(family,
      nbinom2={
        #MASS::rnegbin
        function() unlist(mapply(MASS::rnegbin, n=group.sizes, 
@@ -47,12 +47,9 @@ glmmdata <- function(iter.size, x, beta, sigma.u, group.sizes, family,...) {
      #   function() unlist(mapply(HMMpa::rgenpois, n=group.sizes, lambda1, args$lambda2))
      # },
      stop("data generation not implemented for family: ", family)
-  )
+  )()
   
-  for (i in 1:iter) {                
-    dat <- generate()
-    y_matrix[i, ] <- dat 
-  }
+    y_matrix[i, ] <- y 
   
   result <- structure(list("x" = x, "z" = z, "y" = y_matrix, "family" = family, 
                            "group" = group_assignments), class = "glmmData")
