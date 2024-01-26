@@ -29,29 +29,37 @@ rgen01 <- function(ns) {
 }
 
 # Define parameters
-sig11s <- runif(1000,1.5,12)
+iter.size <- 1000
+sig11s <- runif(iter.size,1.5,12)
 sig12 <- 2
 sig22 <- 3
 phi <- 0.05
-b1 <- 4
-b2 <- 2
+b0 <- 4
+b1 <- 2
 
 group.sizes <- rbinom(10,6,0.9)
 x <- rgen01(group.sizes)
            
 # Create the parameter matrix
 parameter_matrix <- cbind(sig11 = sig11s, 
-                     sig12 = rep(sig12, length(sig11s)), 
-                     sig22 = rep(sig22, length(sig11s)), 
-                     phi = rep(phi, length(sig11s)), 
-                     b1 = rep(b1, length(sig11s)), 
-                     b2 = rep(b2, length(sig11s)))
+                     sig12 = rep(sig12, iter.size), 
+                     sig22 = rep(sig22, iter.size), 
+                     phi = rep(phi, iter.size), 
+                     b0 = rep(b0, iter.size), 
+                     b1 = rep(b1, iter.size))
 
-
-dataGeneration <- function(parameter_matrix, group.sizes) {
-  x <- rgen01(group.sizes)
+dataGeneration <- function(data_matrix, group.sizes, family, ...) {
+    x <- rgen01(group.sizes)
+    n <- dim(data_matrix)[1]
+    CountMatrix <- lapply(1:n, function(i) {
+        params <- data_matrix[i, ]
+        beta <- c(params["b0"], params["b1"])
+        sigma.u <- matrix(c(params["sig11"], params["sig12"], params["sig12"], params["sig22"]), 2)
+        glmmdata(1, x, beta, sigma.u, group.sizes, family, ...)
+    })
+    CountMatrix <- do.call(rbind, CountMatrix)
+    return(CountMatrix)
 }
-
 
 
 beta <- c(2,3)
