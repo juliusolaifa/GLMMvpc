@@ -28,6 +28,23 @@ rgen01 <- function(ns) {
   )))
 }
 
+# Define parameters
+sig11s <- runif(1000,1.5,12)
+sig12 <- 2
+sig22 <- 3
+phi <- 0.05
+b1 <- 4
+b2 <- 2
+
+# Create the parameter matrix
+parameter_matrix <- cbind(sig11 = sig11s, 
+                     sig12 = rep(sig12, length(sig11s)), 
+                     sig22 = rep(sig22, length(sig11s)), 
+                     phi = rep(phi, length(sig11s)), 
+                     b1 = rep(b1, length(sig11s)), 
+                     b2 = rep(b2, length(sig11s)))
+
+
 
 group.sizes <- rbinom(10,6,0.9)
 beta <- c(2,3)
