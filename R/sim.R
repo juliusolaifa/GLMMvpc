@@ -36,6 +36,9 @@ phi <- 0.05
 b1 <- 4
 b2 <- 2
 
+group.sizes <- rbinom(10,6,0.9)
+x <- rgen01(group.sizes)
+           
 # Create the parameter matrix
 parameter_matrix <- cbind(sig11 = sig11s, 
                      sig12 = rep(sig12, length(sig11s)), 
@@ -45,8 +48,12 @@ parameter_matrix <- cbind(sig11 = sig11s,
                      b2 = rep(b2, length(sig11s)))
 
 
+dataGeneration <- function(parameter_matrix, group.sizes) {
+  x <- rgen01(group.sizes)
+}
 
-group.sizes <- rbinom(10,6,0.9)
+
+
 beta <- c(2,3)
 sigma.u <- rpdmat(2)#matrix(c(3,1,1,2),2)#rpdmat(2)
 x <- rgen01(group.sizes)
